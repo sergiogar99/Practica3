@@ -39,10 +39,10 @@ const runGraphQLServer = function(context) {
       getAuthors: [Author]
 
       getRecipe(id:ID!):Recipe
-      getRecipe:[Recipe]
+      getRecipes:[Recipe]
 
       getIngredient(id:ID!):Ingredient
-      getIngredient:[Ingredient]
+      getIngredients:[Ingredient]
       
     }
 
@@ -65,6 +65,7 @@ const runGraphQLServer = function(context) {
       _id: ID!
       name: String!
       mail: String!
+      recipes:[Recipe]
     }
 
     type Ingredient{
@@ -77,7 +78,6 @@ const runGraphQLServer = function(context) {
       _id: ID!
       title: String!
       description: String!
-      date: String!
       author: Author!
       ingredients:[Ingredient!]
   }
@@ -94,9 +94,7 @@ const runGraphQLServer = function(context) {
         const db = client.db("blog");
         const collection = db.collection("ingredients");
 
-         
-        const result = await collection.find({"recipe": rec}).toArray();
-        
+        const result = await collection.find({"recipe": rec}).toArray();        
         return result;
       },
   
@@ -106,38 +104,44 @@ const runGraphQLServer = function(context) {
         const { client } = ctx;
         const db = client.db("blog");
         const collection = db.collection("authors");
-        const result = await collection.findOne({"name": author});
 
+        const result = await collection.findOne({"name": author});
         return result;
-  
       },
   
     },
+    Author:{
   
-    // Author:{
+      recipes:async (parent, args, ctx, info)=>{
   
-    //   recipes: (parent, args, ctx, info)=>{
-  
-    //     const name = parent.name;
-    //     return recipesData.filter(obj => obj.author == name);
 
-      
+        const name = parent.name;
+
+        const { id } = args;
+        const { client } = ctx;
+        const db = client.db("blog");
+        const collection = db.collection("recipes");
         
-    //   },
+        const result = await collection.find({"author": name}).toArray();
+        return result;
+      },
   
-    // },
+    },
+    Ingredient:{
   
-    // Ingredient:{
+      recipes:async (parent, args, ctx, info)=>{
   
-    //   recipe: (parent, args, ctx, info)=>{
+        const ingredient = parent.name;
+        
+        const { client } = ctx;
+        const db = client.db("blog");
+        const collection = db.collection("recipes");
+
+        const result = await collection.find({"ingredients": ingredient}).toArray();
+        return result;
+      },
   
-    //     const name = parent.recipe;
-  
-    //     return recipesData.filter(obj => obj.title == name);
-  
-    //   },
-  
-    // },
+    },
 
     Query: {
 
@@ -156,30 +160,47 @@ const runGraphQLServer = function(context) {
         const result = await collection.find({}).toArray();
         return result;
       },
-
       getRecipe: async (parent, args, ctx, info) => {
 
-
+        const { id } = args;
+        const { client } = ctx;
+        const db = client.db("blog");
+        const collection = db.collection("recipes");
+        const result = await collection.findOne({ _id: ObjectID(id)});
+        return result;
 
       },
-
       getRecipes: async (parent, args, ctx, info) => {
 
-
+        const { client } = ctx;
+        const db = client.db("blog");
+        const collection = db.collection("recipes");
+        const result = await collection.find({}).toArray();
+        return result;
 
       },
-
       getIngredient: async (parent, args, ctx, info) => {
 
-
+        const { id } = args;
+        const { client } = ctx;
+        const db = client.db("blog");
+        const collection = db.collection("ingredients");
+        const result = await collection.findOne({ _id: ObjectID(id)});
+        return result;
 
       },
-
       getIngredients: async (parent, args, ctx, info) => {
 
-
+        const { client } = ctx;
+        const db = client.db("blog");
+        const collection = db.collection("ingredients");
+        const result = await collection.find({}).toArray();
+        return result;
 
       },
+      
+
+      //Todo Okey
 
     },
 
@@ -270,6 +291,7 @@ const runGraphQLServer = function(context) {
         }
 
       },
+
 
       addIngredient: async (parent, args, ctx, info) => {
 
