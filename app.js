@@ -49,16 +49,16 @@ const runGraphQLServer = function(context) {
     type Mutation{
 
       addAuthor(name: String!, mail: String!):Author!
-      updateAuthor(id:ID!,name:String,age:Int):Author!
-      removeAuthor(id:ID!):String
+      updateAuthor(id:ID!,name:String,mail:String):Author!
+      removeAuthor(author:String!):String
 
       addRecipe(title:String!,description:String!,author:String!,ingredients:[String!]):Recipe!
-      
-      
+      updateRecipe(id:ID!,title:String,description:String,author:String,ingredients:[String]):Recipe!
+      removeRecipe(id:ID!):String
       
       addIngredient(name:String!,recipe:String!):Ingredient!
-
-
+      updateIngredient(id:ID!,name:String,recipe:String):Ingredient!
+      removeIngredient(id:ID!):String
     }
 
     type Author{
@@ -199,9 +199,6 @@ const runGraphQLServer = function(context) {
 
       },
       
-
-      //Todo Okey
-
     },
 
     Mutation: {
@@ -222,7 +219,6 @@ const runGraphQLServer = function(context) {
       },
       updateAuthor:async (parent, args, ctx, info) => {
 
-
         const { client } = ctx;
         const db = client.db("blog");
         const collection = db.collection("authors");
@@ -230,37 +226,42 @@ const runGraphQLServer = function(context) {
         let result;
         let data = await collection.findOne({ _id: ObjectID(args.id)});
 
-        if(args.name && args.age){
+        if(args.name && args.mail){
 
-          result = await collection.updateOne({"_id":ObjectID(args.id)},{$set:{name:args.name,age:args.age}});
+          result = await collection.updateOne({"_id":ObjectID(args.id)},{$set:{name:args.name,mail:args.mail}});
           result = await collection.findOne({ _id: ObjectID(args.id)});
 
           return result;
 
         } else if(args.name){
 
-          result = await collection.updateOne({"_id":ObjectID(args.id)},{$set:{name:args.name,age:data.age}});
+          result = await collection.updateOne({"_id":ObjectID(args.id)},{$set:{name:args.name,mail:data.mail}});
           result = await collection.findOne({ _id: ObjectID(args.id)});
           return result;
 
-        }else if(args.age){
+        }else if(args.mail){
 
-          result = await collection.updateOne({"_id":ObjectID(args.id)},{$set:{name:data.name,age:args.age}});
+          result = await collection.updateOne({"_id":ObjectID(args.id)},{$set:{name:data.name,mail:args.mail}});
           result = await collection.findOne({ _id: ObjectID(args.id)});
           return result;
           
         }
       },
-      removeAuthor:async(parent, args, ctx, info) => {
+      removeAuthor:async(parent, args, ctx, info) => { //Al borrar un autor borrar todas sus recetas.
 
+        const author = args;
         const { client } = ctx;
         const db = client.db("blog");
-        const collection = db.collection("authors");
+        let collection = db.collection("authors");
+        const result = await collection.findOne({ name:author });
 
-        await collection.deleteOne({ _id: { $eq: ObjectID(args.id) } });
-
+        if(result){
+        
+        await collection.deleteOne({author:{$eq:author}}); //Borra el autor pero hay que borrar tambien sus recetas
+        collection = db.collection("recipes");
+        await collection.remove({author:{$eq:author}},false);//Borramos las recetas que tengan el nombre del autor borrado
+        }
       },
-
 
       addRecipe: async (parent, args, ctx, info) => {
 
@@ -291,7 +292,46 @@ const runGraphQLServer = function(context) {
         }
 
       },
+      updateRecipe: async (parent, args, ctx, info) => {
 
+
+        const { client } = ctx;
+        const db = client.db("blog");
+        const collection = db.collection("recipes");
+
+        let result;
+        let data = await collection.findOne({ _id: ObjectID(args.id)});
+
+        if(args.title){
+
+          result = await collection.updateOne({"_id":ObjectID(args.id)},{$set:{title:args.title}});
+          result = await collection.findOne({ _id: ObjectID(args.id)});
+        }
+
+        if(args.description){
+
+          result = await collection.updateOne({"_id":ObjectID(args.id)},{$set:{description:args.description}});
+          result = await collection.findOne({ _id: ObjectID(args.id)});
+        }
+
+        if(args.author){
+
+          result = await collection.updateOne({"_id":ObjectID(args.id)},{$set:{author:args.author}});
+          result = await collection.findOne({ _id: ObjectID(args.id)});
+        }
+
+        if(args.ingredients){
+
+          result = await collection.updateOne({"_id":ObjectID(args.id)},{$set:{ingredients:args.ingredients}});
+          result = await collection.findOne({ _id: ObjectID(args.id)});
+        }
+
+        return result;
+
+      },
+      removeRecipe: async (parent, args, ctx, info) => {
+
+      },
 
       addIngredient: async (parent, args, ctx, info) => {
 
@@ -310,14 +350,47 @@ const runGraphQLServer = function(context) {
           _id: result.ops[0]._id
         };
       },
+      updateIngredient: async (parent, args, ctx, info) => {
 
+          //name:String,recipe:String
+          const { client } = ctx;
+          const db = client.db("blog");
+          const collection = db.collection("ingredients");
+
+          let result;
+          let data = await collection.findOne({ _id: ObjectID(args.id)});
+
+          if(args.name && args.recipe){
+
+            result = await collection.updateOne({"_id":ObjectID(args.id)},{$set:{name:args.name,recipe:args.recipe}});
+            result = await collection.findOne({ _id: ObjectID(args.id)});
+
+           
+            return result;
+
+          }else if(args.name){
+
+            result = await collection.updateOne({"_id":ObjectID(args.id)},{$set:{name:args.name,recipe:data.recipe}});
+            result = await collection.findOne({ _id: ObjectID(args.id)});
+            return result;
+
+          }else if(args.recipe){
+
+            result = await collection.updateOne({"_id":ObjectID(args.id)},{$set:{name:data.name,recipe:args.recipe}});
+            result = await collection.findOne({ _id: ObjectID(args.id)});
+            return result;
+          }
+      },
+      removeIngredient: async (parent, args, ctx, info) => { //Al borrar un ingrediente, se borran todas las recetas que lo contengan.
+
+      },
 
     }
   };
 
   const server = new GraphQLServer({ typeDefs, resolvers, context });
   const options = {
-    port: 8000
+    port: 8001
   };
 
   try {
