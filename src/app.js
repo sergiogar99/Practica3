@@ -3,8 +3,6 @@ import { GraphQLServer } from "graphql-yoga";
 
 import "babel-polyfill";
 
-//"mongodb+srv://sergio:123pez@cluster0-dikpx.gcp.mongodb.net/test?retryWrites=true&w=majority"
-
 const usr = "sergio";
 const pwd = "123pez";
 const url = "cluster0-dikpx.gcp.mongodb.net/test?retryWrites=true&w=majority";
@@ -247,7 +245,7 @@ const runGraphQLServer = function(context) {
           
         }
       },
-      removeAuthor:async(parent, args, ctx, info) => { //Al borrar un autor borrar todas sus recetas.
+      removeAuthor:async(parent, args, ctx, info) => {
 
         const { client } = ctx;
         const db = client.db("blog");
@@ -256,16 +254,14 @@ const runGraphQLServer = function(context) {
 
         if(result){
         
-        await collection.deleteOne({name:{$eq:args.author}}); //Borra el autor pero hay que borrar tambien sus recetas
+        await collection.deleteOne({name:{$eq:args.author}}); 
 
         collection = db.collection("recipes");
-        await collection.remove({author:{$eq:args.author}},false);//Borramos las recetas que tengan el nombre del autor borrado
+        await collection.remove({author:{$eq:args.author}},false);
         }
       },
 
       addRecipe: async (parent, args, ctx, info) => {
-
-        //title:String!,description:String!,author:String!,ingredients:[String!]
 
         const { title, description,author,ingredients } = args;
         const { client } = ctx;
@@ -357,7 +353,7 @@ const runGraphQLServer = function(context) {
         const result = await collection.findOne({ _id: ObjectID(id)});
 
         if(result){
-          await collection.deleteOne({_id:{$eq:ObjectID(id)}}); //Borra el autor pero hay que borrar tambien sus recetas
+          await collection.deleteOne({_id:{$eq:ObjectID(id)}}); 
         }
       },
 
@@ -380,7 +376,6 @@ const runGraphQLServer = function(context) {
       },
       updateIngredient: async (parent, args, ctx, info) => {
 
-          //name:String,recipe:String
           const { client } = ctx;
           const db = client.db("blog");
           const collection = db.collection("ingredients");
@@ -410,9 +405,6 @@ const runGraphQLServer = function(context) {
           }
       },
       removeIngredient: async (parent, args, ctx, info) => { //Al borrar un ingrediente, se borran todas las recetas que lo contengan.
-
-        //id
-        //borrar ingrediente y que no aparezca en la receta, aunque creo que eso se puede hacer solo borrando el ingrediente xd
 
         const { id } = args;
         const { client } = ctx;
